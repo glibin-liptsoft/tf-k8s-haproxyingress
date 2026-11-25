@@ -1,4 +1,18 @@
 # main.tf
+locals {
+  helm_values = templatefile("${path.module}/ingress-controller.tftpl", {
+      ingress_controller_kind   = var.ingress_controller_kind
+      replica_count             = var.replica_count
+      ingress_class_name        = var.ingress_class_name
+      service_type              = var.service_type
+      service_annotations       = var.service_annotations
+      load_balancer_ip          = var.load_balancer_ip
+      src_ip_header             = var.src_ip_header
+      log_format                = var.log_format
+      tolerations               = var.tolerations
+      affinity                  = var.affinity
+    })
+}
 resource "kubernetes_namespace" "this" {
   metadata {
     name   = var.namespace
@@ -11,22 +25,12 @@ resource "helm_release" "this" {
   namespace  = var.namespace
   chart      = "${path.module}/helm-chart"
 
-  create_namespace = true
-  wait             = true
-  timeout          = 600
-
   values = [
-    templatefile("${path.module}/ingress-controller.tftpl", {
-      ingress_controller_kind   = var.ingress_controller_kind
-      replica_count             = var.replica_count
-      ingress_class_name        = var.ingress_class_name
-      service_type              = var.service_type
-      service_annotations       = var.service_annotations
-      load_balancer_ip          = var.load_balancer_ip
-      src_ip_header             = var.src_ip_header
-      log_format                = var.log_format
-      tolerations               = var.tolerations
-      affinity                  = var.affinity
-    })
+    local.helm_values,
+    try(var.custom_helm_values),
+  ]
+
+  depends_on = [
+    kubernetes_namespace.this
   ]
 }

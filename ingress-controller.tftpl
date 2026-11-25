@@ -1,52 +1,63 @@
-#
 controller:
     name: ${ingress_class_name}
     kind: ${ingress_controller_kind}
     replicaCount: ${replica_count}
-    %{~ if length(affinity) > 0 }
+    %{~ if length(affinity) > 0 ~}
     affinity:
-        ${indent(4, affinity)}
-    %{~ endif }
-    %{~ if length(tolerations) > 0 }
+        ${indent(8, affinity)}
+    %{~ endif ~}
+    %{~ if length(tolerations) > 0 ~}
     tolerations:
-        ${indent(4, tolerations)}
-    %{~ endif }
-    %{ if ingress_class_name != "" ~}
+        ${indent(8, tolerations)}
+    %{~ endif ~}
+    %{~ if ingress_class_name != "" ~}
     ingressClass: ${ingress_class_name}
     ingressClassResource:
         name: ${ingress_class_name}
         default: false
-    %{~ endif }
+    %{~ endif ~}
+    logging:
+        level: info
+        traffic:
+            address:  "stdout"
+            format:   "raw"
+            facility: "daemon"
 
     config:
-        %{ if log_format != "" ~}
-        log-format '${log_format}'
-        %{ else ~}
-        log-format '%ci:%cp [%tr] %ft %b/%s %TR/%Tw/%Tc/%Tr/%Ta %ST %B %CC %CS %tsc %ac/%fc/%bc/%sc/%rc %sq/%bq %hr %hs \"%HM %[var(txn.base)] %HV\"'
-        %{ endif ~}
-        %{ if log_format != "" ~}
-        src-ip-header '${src_ip_header}'
-        %{ endif ~}
-        
-    %{ endif ~}
+        %{~ if log_format != "" ~}
+        log-format: "${log_format}"
+        %{~ else ~}
+        log-format: "%ci:%cp [%tr] %ft %b/%s %TR/%Tw/%Tc/%Tr/%Ta %ST %B %CC %CS %tsc %ac/%fc/%bc/%sc/%rc %sq/%bq %hr %hs \"%HM %[var(txn.base)] %HV\""
+        %{~ endif ~}
+        %{ if src_ip_header != "" ~}
+        src-ip-header: "${src_ip_header}"
+        %{~ endif ~}
 
     service:
         type: ${service_type}
-        %{ if length(service_annotations) > 0 ~}
+        %{~ if length(service_annotations) > 0 ~}
         annotations:
-            %{ for key, value in service_annotations ~}
+            %{~ for key, value in service_annotations ~}
             ${key}: "${value}"
-            %{ endfor ~}
-        %{ endif ~}
+            %{~ endfor ~}
+        %{~ endif ~}
         externalTrafficPolicy: Local
         loadBalancerIP: ${load_balancer_ip}
+        enablePorts:
+            http: true
+            https: true
+            quic: false
+            stat: false
+            admin: false
 
+%{ if length(affinity) > 0 || length(tolerations) > 0 }
 crdjob:
-    %{~ if length(affinity) > 0 }
+    %{~ if length(affinity) > 0 ~}
     affinity:
-        ${indent(4, affinity)}
-    %{~ endif }
-    %{~ if length(tolerations) > 0 }
+        ${indent(8, affinity)}
+    %{~ endif ~}
+    %{~ if length(tolerations) > 0 ~}
     tolerations:
-        ${indent(4, tolerations)}
-    %{~ endif }
+        ${indent(8, tolerations)}
+    %{~ endif ~}
+%{~ endif ~}

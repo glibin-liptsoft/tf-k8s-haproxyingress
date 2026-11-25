@@ -102,3 +102,9 @@ variable "affinity" {
   type        = string
   default     = ""
 }
+
+variable "custom_helm_values" {
+  type        = string
+  default     = ""
+  description = "Custom YAML helm values"
+}
